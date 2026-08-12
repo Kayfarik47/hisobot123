@@ -10,15 +10,10 @@ router = Router()
 
 @router.message(F.chat.id == GROUP_ID, F.photo)
 async def report_handler(message: Message):
-    if not message.caption:
-        await message.answer("Rasm ostiga izoh yozing.")
-        return
-
     now = datetime.now()
     today = now.date().isoformat()
 
     if await has_reported(message.from_user.id, today):
-        await message.answer("Siz bugun allaqachon hisobot topshirgansiz.")
         return
 
     deadline_passed = (now.hour, now.minute) > (DEADLINE_HOUR, DEADLINE_MINUTE)
@@ -31,5 +26,3 @@ async def report_handler(message: Message):
         now.strftime("%H:%M"),
         status
     )
-
-    await message.answer(f"Hisobot qabul qilindi: {status}")
