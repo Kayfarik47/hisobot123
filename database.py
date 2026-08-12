@@ -26,16 +26,12 @@ async def init_db():
 # ---------- Employees (xodimlar) ----------
 
 async def add_employee(user_id, fullname):
-    """
-    Xodimni ro'yxatga qo'shadi (agar ID allaqachon mavjud bo'lsa, ismini
-    O'ZGARTIRMAYDI - shu ID uchun bazadagi ism doim ustun turadi, Telegram
-    profilidagi joriy ismdan qat'i nazar). Faqat faollik holatini yangilaydi.
-    """
+    """Xodimni ro'yxatga qo'shadi yoki mavjud bo'lsa faollashtiradi/ismini yangilaydi."""
     async with aiosqlite.connect(DB) as db:
         await db.execute('''
             INSERT INTO employees(user_id, fullname, joined_date, active)
             VALUES(?, ?, ?, 1)
-            ON CONFLICT(user_id) DO UPDATE SET active=1
+            ON CONFLICT(user_id) DO UPDATE SET fullname=excluded.fullname, active=1
         ''', (user_id, fullname, datetime.now().date().isoformat()))
         await db.commit()
 
