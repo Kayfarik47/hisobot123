@@ -1,0 +1,35 @@
+from aiogram import Router, F
+from aiogram.types import Message
+from datetime import datetime
+
+from database import add_report, has_reported
+from config import GROUP_ID, DEADLINE_HOUR, DEADLINE_MINUTE
+
+router = Router()
+
+
+@router.message(F.chat.id == GROUP_ID, F.photo)
+async def report_handler(message: Message):
+    if not message.caption:
+        await message.answer("Rasm ostiga izoh yozing.")
+        return
+
+    now = datetime.now()
+    today = now.date().isoformat()
+
+    if await has_reported(message.from_user.id, today):
+        await message.answer("Siz bugun allaqachon hisobot topshirgansiz.")
+        return
+
+    deadline_passed = (now.hour, now.minute) > (DEADLINE_HOUR, DEADLINE_MINUTE)
+    status = "Kechikdi" if deadline_passed else "Vaqtida"
+
+    await add_report(
+        message.from_user.id,
+        message.from_user.full_name,
+        today,
+        now.strftime("%H:%M"),
+        status
+    )
+
+    await message.answer(f"Hisobot qabul qilindi: {status}")
