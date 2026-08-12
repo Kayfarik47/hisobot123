@@ -30,4 +30,4 @@ Sana ko'rsatilmasa, bugungi kun uchun natija chiqadi.
 pip install -r requirements.txt
 cp .env.example .env   # BOT_TOKEN, GROUP_ID, DEADLINE_HOUR/MINUTE ni to'ldiring
 python bot.py
-```
+``` 
