@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from aiogram import Router
 from aiogram.filters import Command
@@ -16,6 +16,8 @@ from excel import build_excel_report
 
 router = Router()
 
+TASHKENT_TZ = timezone(timedelta(hours=5))
+
 
 def _is_admin(message: Message) -> bool:
     return message.from_user is not None and message.from_user.id in ADMINS
@@ -24,11 +26,11 @@ def _is_admin(message: Message) -> bool:
 def _parse_date(text: str):
     """
     Komanda matnidan sanani ajratib oladi: '/late 2026-08-10' -> '2026-08-10'.
-    Sana berilmagan bo'lsa - bugungi sana. Noto'g'ri format bo'lsa - None.
+    Sana berilmagan bo'lsa - bugungi sana (Toshkent vaqti). Noto'g'ri format bo'lsa - None.
     """
     parts = text.split(maxsplit=1)
     if len(parts) < 2:
-        return datetime.now().date().isoformat()
+        return datetime.now(TASHKENT_TZ).date().isoformat()
     try:
         return datetime.strptime(parts[1].strip(), "%Y-%m-%d").date().isoformat()
     except ValueError:
