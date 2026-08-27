@@ -1,6 +1,8 @@
 import aiosqlite
 from datetime import datetime
 
+from config import ADMINS
+
 DB = 'reports.db'
 
 
@@ -20,18 +22,84 @@ async def init_db():
         joined_date TEXT,
         active INTEGER DEFAULT 1
         )''')
+        await db.execute('''CREATE TABLE IF NOT EXISTS admins(
+        user_id INTEGER PRIMARY KEY,
+        fullname TEXT,
+        added_by INTEGER,
+        added_date TEXT,
+        active INTEGER DEFAULT 1
+        )''')
+
+        # config.py dagi adminlar doim asosiy admin sifatida bazaga kiritiladi.
+        # INSERT OR IGNORE mavjud yozuvning nomini/statusini buzmaydi.
+        today = datetime.now().date().isoformat()
+        for admin_id in ADMINS:
+            await db.execute('''
+                INSERT OR IGNORE INTO admins(user_id, fullname, added_by, added_date, active)
+                VALUES(?, ?, ?, ?, 1)
+            ''', (admin_id, f"Asosiy admin ({admin_id})", admin_id, today))
+            # Asosiy admin tasodifan nofaol qilingan bo'lsa ham qayta faollashtiriladi.
+            await db.execute("UPDATE admins SET active=1 WHERE user_id=?", (admin_id,))
+
         await db.commit()
+
+
+# ---------- Admins ----------
+
+async def is_admin(user_id: int) -> bool:
+    async with aiosqlite.connect(DB) as db:
+        async with db.execute(
+            "SELECT 1 FROM admins WHERE user_id=? AND active=1",
+            (user_id,)
+        ) as cur:
+            return await cur.fetchone() is not None
+
+
+async def add_admin(user_id: int, fullname: str, added_by: int):
+    """Yangi adminni qo'shadi yoki oldin o'chirilgan adminni qayta faollashtiradi."""
+    async with aiosqlite.connect(DB) as db:
+        await db.execute('''
+            INSERT INTO admins(user_id, fullname, added_by, added_date, active)
+            VALUES(?, ?, ?, ?, 1)
+            ON CONFLICT(user_id) DO UPDATE SET
+                fullname=excluded.fullname,
+                added_by=excluded.added_by,
+                added_date=excluded.added_date,
+                active=1
+        ''', (user_id, fullname, added_by, datetime.now().date().isoformat()))
+        await db.commit()
+
+
+async def remove_admin(user_id: int):
+    """Adminni o'chirmasdan nofaol holatga o'tkazadi."""
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("UPDATE admins SET active=0 WHERE user_id=?", (user_id,))
+        await db.commit()
+
+
+async def get_all_admins(active_only=True):
+    async with aiosqlite.connect(DB) as db:
+        query = "SELECT user_id, fullname, added_by, added_date FROM admins"
+        if active_only:
+            query += " WHERE active=1"
+        query += " ORDER BY fullname"
+        async with db.execute(query) as cur:
+            return await cur.fetchall()
 
 
 # ---------- Employees (xodimlar) ----------
 
 async def add_employee(user_id, fullname):
-    """Xodimni ro'yxatga qo'shadi yoki mavjud bo'lsa faollashtiradi/ismini yangilaydi."""
+    """
+    Xodimni ro'yxatga qo'shadi (agar ID allaqachon mavjud bo'lsa, ismini
+    O'ZGARTIRMAYDI - shu ID uchun bazadagi ism doim ustun turadi, Telegram
+    profilidagi joriy ismdan qat'i nazar). Faqat faollik holatini yangilaydi.
+    """
     async with aiosqlite.connect(DB) as db:
         await db.execute('''
             INSERT INTO employees(user_id, fullname, joined_date, active)
             VALUES(?, ?, ?, 1)
-            ON CONFLICT(user_id) DO UPDATE SET fullname=excluded.fullname, active=1
+            ON CONFLICT(user_id) DO UPDATE SET active=1
         ''', (user_id, fullname, datetime.now().date().isoformat()))
         await db.commit()
 

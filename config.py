@@ -9,4 +9,3 @@ ADMINS = [6262166970, 515523963, 6262616970]
 # Hisobot topshirish uchun so'nggi muddat (shundan keyin "Kechikdi" deb belgilanadi)
 DEADLINE_HOUR = int(os.getenv("DEADLINE_HOUR", "14"))
 DEADLINE_MINUTE = int(os.getenv("DEADLINE_MINUTE", "0"))
-
