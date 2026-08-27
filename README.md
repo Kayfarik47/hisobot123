@@ -41,3 +41,5 @@ Asosiy adminlarni panel orqali o'chirib bo'lmaydi.
 pip install -r requirements.txt
 python bot.py
 ```
+## Asosiy adminlar
+`387045032` ID ham asosiy admin sifatida qo'shilgan.
